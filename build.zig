@@ -8,6 +8,7 @@ pub fn build(b: *std.Build) void {
     const raylib = b.dependency("raylib", .{ .target = target, .optimize = optimize, .linux_display_backend = .X11, .shared = true });
     const rayzig = b.dependency("raylib_zig", .{ .target = target, .optimize = optimize });
     const orbvis = b.dependency("orbvis", .{});
+    const units = b.dependency("unitz", .{ .target = target, .optimize = optimize });
 
     const exe_mod = b.createModule(.{
         .root_source_file = b.path("main.zig"),
@@ -17,6 +18,7 @@ pub fn build(b: *std.Build) void {
     });
     exe_mod.addImport("raylib", rayzig.module("raylib"));
     exe_mod.addImport("raygui", rayzig.module("raygui"));
+    exe_mod.addImport("units", units.module("unitz"));
     const exe = b.addExecutable(.{
         .name = "ephemerides_visualizer",
         .root_module = exe_mod,
@@ -33,7 +35,6 @@ pub fn build(b: *std.Build) void {
         });
         const options = b.addOptions();
         options.addOption([]const u8, "textures", b.getInstallPath(install_textures.options.install_dir, "textures"));
-        //options.addOptionPath("shaders", orbvis.path("res/shader"));
         exe_mod.addOptions("assets", options);
         exe.step.dependOn(&install_textures.step);
     }

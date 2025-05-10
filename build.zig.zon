@@ -15,6 +15,10 @@
             .url = "git+https://github.com/wojciech-graj/OrbVis?ref=master#89cfa5e086fe73303498997091630e14c3a38940",
             .hash = "N-V-__8AAIrmuADajZ5NzB1UEY4lYmQAlBiUO5mAOqxGRhHq",
         },
+        .unitz = .{
+            .url = "git+https://github.com/agagniere/unitz?ref=master#4a07ae5d4d1d3c38be3a9ef5ebc622851f057ca5",
+            .hash = "unitz-0.1.0-SkAk5IBwAADftk39UmGHAx3KeAlHWMdYkENGJW6mJJuF",
+        },
     },
     .paths = .{
         "build.zig",
