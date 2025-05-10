@@ -1,7 +1,6 @@
 .{
-    .name = .ephemerides_vizualizer,
+    .name = .ephemerides_visualizer,
     .version = "0.0.0",
-    .fingerprint = 0x10ffb2419d3f6dd,
     .minimum_zig_version = "0.14.0",
     .dependencies = .{
         .raylib_zig = .{
@@ -20,5 +19,10 @@
     .paths = .{
         "build.zig",
         "build.zig.zon",
+        "main.zig",
+        "assets.zig",
+        "README.md",
+        "LICENSE",
     },
+    .fingerprint = 0x1e40e00f50160877,
 }
