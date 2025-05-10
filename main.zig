@@ -6,6 +6,7 @@ const units = @import("units");
 const Camera = raylib.Camera3D;
 const Vector3 = raylib.Vector3;
 const Texture = raylib.Texture2D;
+const Shader = raylib.Shader;
 
 const km = units.evalQuantity(f32, "km", .{});
 const Mm = units.evalQuantity(f32, "Mm", .{});
@@ -25,8 +26,8 @@ const Planet = struct {
         return .{ .radius = r, .model = try .fromMesh(mesh) };
     }
 
-    fn setTexture(self: *Planet, texture: Texture) void {
-        self.model.materials[0].maps[0].texture = texture;
+    fn setShader(self: *Planet, shader: Shader) void {
+        self.model.materials[0].shader = shader;
     }
 
     fn deinit(self: *Planet) void {
@@ -43,16 +44,15 @@ pub fn main() anyerror!void {
     raylib.setTargetFPS(60);
 
     var earth: Planet = try .init(.init(6_371));
-
     const earthPos: Vector3 = .{ .x = 0, .y = 0, .z = 0 };
-    var earthImage = try raylib.loadImageFromMemory(".jpg", assets.earth_day);
-    defer earthImage.unload();
-    earthImage.flipVertical();
-    earthImage.rotateCCW();
-    const earthTexture = try raylib.loadTextureFromImage(earthImage);
-    defer earthTexture.unload();
-    earth.setTexture(earthTexture);
-    earth.model.transform = raylib.Matrix.rotateX(67 * std.math.rad_per_deg);
+
+    const earthDay = try raylib.loadImageFromMemory(".jpg", assets.texture.earth.day);
+    defer earthDay.unload();
+    const earthNight = try raylib.loadImageFromMemory(".jpg", assets.texture.earth.night);
+    defer earthNight.unload();
+
+    const earthShader = try raylib.loadShaderFromMemory(assets.shader.earth.vertex, assets.shader.earth.fragment);
+    defer raylib.unloadShader(earthShader);
 
     var camera: Camera = .{
         .position = .{ .x = 10, .y = 10, .z = 10 },

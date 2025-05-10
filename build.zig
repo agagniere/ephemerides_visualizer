@@ -7,7 +7,6 @@ pub fn build(b: *std.Build) void {
 
     const raylib = b.dependency("raylib", .{ .target = target, .optimize = optimize, .linux_display_backend = .X11, .shared = true });
     const rayzig = b.dependency("raylib_zig", .{ .target = target, .optimize = optimize });
-    const orbvis = b.dependency("orbvis", .{});
     const units = b.dependency("unitz", .{ .target = target, .optimize = optimize });
 
     const exe_mod = b.createModule(.{
@@ -27,16 +26,25 @@ pub fn build(b: *std.Build) void {
     b.installArtifact(exe);
 
     { // Assets
+        const orbvis = b.dependency("orbvis", .{});
         const install_textures = b.addInstallDirectory(.{
             .source_dir = orbvis.path("res/texture"),
             .install_dir = .{ .custom = "assets" },
             .install_subdir = "textures",
             .include_extensions = &.{".jpg"},
         });
+        const install_shaders = b.addInstallDirectory(.{
+            .source_dir = orbvis.path("res/shader"),
+            .install_dir = .{ .custom = "assets" },
+            .install_subdir = "shaders",
+            .include_extensions = &.{ ".vert", ".frag" },
+        });
         const options = b.addOptions();
         options.addOption([]const u8, "textures", b.getInstallPath(install_textures.options.install_dir, "textures"));
+        options.addOption([]const u8, "shaders", b.getInstallPath(install_shaders.options.install_dir, "shaders"));
         exe_mod.addOptions("assets", options);
         exe.step.dependOn(&install_textures.step);
+        exe.step.dependOn(&install_shaders.step);
     }
     { // Run
         const run_step = b.step("run", "Run the app");
