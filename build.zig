@@ -7,6 +7,7 @@ pub fn build(b: *std.Build) void {
 
     const raylib = b.dependency("raylib", .{ .target = target, .optimize = optimize, .linux_display_backend = .X11, .shared = true });
     const rayzig = b.dependency("raylib_zig", .{ .target = target, .optimize = optimize });
+    const orbvis = b.dependency("orbvis", .{});
 
     const exe_mod = b.createModule(.{
         .root_source_file = b.path("main.zig"),
@@ -23,6 +24,19 @@ pub fn build(b: *std.Build) void {
     exe.linkLibrary(raylib.artifact("raylib"));
     b.installArtifact(exe);
 
+    { // Assets
+        const install_textures = b.addInstallDirectory(.{
+            .source_dir = orbvis.path("res/texture"),
+            .install_dir = .{ .custom = "assets" },
+            .install_subdir = "textures",
+            .include_extensions = &.{".jpg"},
+        });
+        const options = b.addOptions();
+        options.addOption([]const u8, "textures", b.getInstallPath(install_textures.options.install_dir, "textures"));
+        //options.addOptionPath("shaders", orbvis.path("res/shader"));
+        exe_mod.addOptions("assets", options);
+        exe.step.dependOn(&install_textures.step);
+    }
     { // Run
         const run_step = b.step("run", "Run the app");
         const run_cmd = b.addRunArtifact(exe);

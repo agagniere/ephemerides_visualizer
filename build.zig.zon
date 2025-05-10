@@ -12,6 +12,10 @@
             .url = "git+https://github.com/raysan5/raylib?ref=master#7e072783683e8449c70e39148c4ac5ccc2ae8c49",
             .hash = "raylib-5.5.0-whq8uIW6NASN0CAB59Hlfvy7en7Bm3UGFRgwcy-zgkAS",
         },
+        .orbvis = .{
+            .url = "git+https://github.com/wojciech-graj/OrbVis?ref=master#89cfa5e086fe73303498997091630e14c3a38940",
+            .hash = "N-V-__8AAIrmuADajZ5NzB1UEY4lYmQAlBiUO5mAOqxGRhHq",
+        },
     },
     .paths = .{
         "build.zig",

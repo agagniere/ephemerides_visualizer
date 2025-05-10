@@ -1,5 +1,6 @@
 const std = @import("std");
 const raylib = @import("raylib");
+const assets = @import("assets.zig");
 
 const Camera = raylib.Camera3D;
 const Vector3 = raylib.Vector3;
@@ -21,14 +22,14 @@ pub fn main() anyerror!void {
     const earthMesh = raylib.genMeshSphere(earthRadius, 64, 64);
     var earthModel = try raylib.loadModelFromMesh(earthMesh);
     defer earthModel.unload();
-    var earthImage = try raylib.loadImage("assets/earth_daymap.jpg");
+    var earthImage = try raylib.loadImageFromMemory(".jpg", assets.earth_day);
     defer earthImage.unload();
     earthImage.flipVertical();
     earthImage.rotateCCW();
     const earthTexture = try raylib.loadTextureFromImage(earthImage);
     defer earthTexture.unload();
     earthModel.materials[0].maps[0].texture = earthTexture;
-    earthModel.transform = raylib.Matrix.rotateX(90 * std.math.rad_per_deg);
+    earthModel.transform = raylib.Matrix.rotateX(67 * std.math.rad_per_deg);
 
     var camera: Camera = .{
         .position = .{ .x = earthRadius * 7, .y = earthRadius * 7, .z = earthRadius * 7 },
