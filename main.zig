@@ -7,6 +7,7 @@ const Camera = raylib.Camera3D;
 const Vector3 = raylib.Vector3;
 const Texture = raylib.Texture2D;
 const Shader = raylib.Shader;
+const gl = raylib.gl;
 
 const km = units.evalQuantity(f32, "km", .{});
 const Mm = units.evalQuantity(f32, "Mm", .{});
@@ -43,6 +44,10 @@ pub fn main() anyerror!void {
     raylib.initWindow(screenWidth, screenHeight, "Visualize GNSS satellite orbits");
     defer raylib.closeWindow();
     raylib.setTargetFPS(60);
+    var icon = try raylib.loadImageFromMemory(".png", assets.icon);
+    defer icon.unload();
+    icon.setFormat(.uncompressed_r8g8b8a8);
+    icon.useAsWindowIcon();
 
     var earth: Planet = try .init(.init(6_371));
     const earthPos: Vector3 = .{ .x = 0, .y = 0, .z = 0 };
@@ -67,9 +72,11 @@ pub fn main() anyerror!void {
         .fovy = 70.0,
         .projection = .perspective,
     };
+    var sunRotation: f32 = 0;
 
     while (!raylib.windowShouldClose()) {
         camera.update(.orbital);
+        sunRotation += 1;
 
         {
             raylib.beginDrawing();
@@ -83,6 +90,15 @@ pub fn main() anyerror!void {
                 earth.model.draw(earthPos, 1, .white);
                 raylib.drawCircle3D(earthPos, earth.radius.val() * 2, X.add(Y), 90.0, .light_gray);
                 raylib.drawCircle3D(earthPos, earth.radius.val() * 3, X, 90.0, .gray);
+
+                {
+                    gl.rlPushMatrix();
+                    defer gl.rlPopMatrix();
+
+                    gl.rlRotatef(sunRotation, 0, 1, 0);
+                    gl.rlTranslatef(15, 0, 0);
+                    raylib.drawSphere(Vector3.zero(), 2, .yellow);
+                }
             }
         }
     }

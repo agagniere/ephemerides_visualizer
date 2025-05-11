@@ -15,3 +15,5 @@ pub const shader = struct {
         pub const fragment = @embedFile(assets.shaders ++ "/earth.frag");
     };
 };
+
+pub const icon = @embedFile(assets.icon);

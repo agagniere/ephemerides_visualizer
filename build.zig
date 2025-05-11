@@ -36,6 +36,7 @@ pub fn build(b: *std.Build) void {
         const options = b.addOptions();
         options.addOption([]const u8, "textures", b.getInstallPath(install_textures.options.install_dir, "textures"));
         options.addOptionPath("shaders", b.path("shaders"));
+        options.addOptionPath("icon", b.path("images/icon-64.png"));
         exe_mod.addOptions("assets", options);
         exe.step.dependOn(&install_textures.step);
     }
