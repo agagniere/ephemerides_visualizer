@@ -51,7 +51,9 @@ pub fn main() anyerror!void {
 
     var earth: Planet = try .init(.init(6_371));
     const earthPos: Vector3 = .{ .x = 0, .y = 0, .z = 0 };
-    const earthDay = try raylib.loadImageFromMemory(".jpg", assets.texture.earth.day);
+    var earthDay = try raylib.loadImageFromMemory(".jpg", assets.texture.earth.day);
+    earthDay.flipVertical();
+    earthDay.rotateCCW();
     defer earthDay.unload();
     const earthSpecularImg = try raylib.loadImageFromMemory(".jpg", assets.texture.earth.specular);
     defer earthSpecularImg.unload();
@@ -61,44 +63,64 @@ pub fn main() anyerror!void {
     defer earthSpecular.unload();
     const earthShader = try raylib.loadShaderFromMemory(null, assets.shader.earth.fragment);
     defer raylib.unloadShader(earthShader);
-    earth.setShader(earthShader);
+    //earth.setShader(earthShader);
     raylib.setMaterialTexture(earth.model.materials, .albedo, earthDayTexture);
     raylib.setMaterialTexture(earth.model.materials, .metalness, earthSpecular);
 
     var camera: Camera = .{
-        .position = .{ .x = 10, .y = 10, .z = 10 },
+        .position = .{ .x = 15, .y = 5, .z = 15 },
         .target = earthPos,
         .up = Y,
-        .fovy = 70.0,
+        .fovy = 65.0,
         .projection = .perspective,
     };
     var sunRotation: f32 = 0;
+    var earthRotation: f32 = 0;
+    var sunPos: Vector3 = .{ .x = 200, .y = 0, .z = 0 };
 
     while (!raylib.windowShouldClose()) {
-        camera.update(.orbital);
-        sunRotation += 1;
+        //camera.update(.orbital);
+        camera.update(.free);
+        sunRotation += 0.1;
+        earthRotation += 1;
 
         {
             raylib.beginDrawing();
             defer raylib.endDrawing();
 
-            raylib.clearBackground(.dark_gray);
+            raylib.clearBackground(.black);
             {
                 camera.begin();
                 defer camera.end();
-
-                earth.model.draw(earthPos, 1, .white);
-                raylib.drawCircle3D(earthPos, earth.radius.val() * 2, X.add(Y), 90.0, .light_gray);
-                raylib.drawCircle3D(earthPos, earth.radius.val() * 3, X, 90.0, .gray);
 
                 {
                     gl.rlPushMatrix();
                     defer gl.rlPopMatrix();
 
-                    gl.rlRotatef(sunRotation, 0, 1, 0);
-                    gl.rlTranslatef(15, 0, 0);
-                    raylib.drawSphere(Vector3.zero(), 2, .yellow);
+                    gl.rlRotatef(67, 1, 0, 0);
+                    raylib.drawCircle3D(earthPos, earth.radius.val() * 2, X, 0, .gray);
+
+                    {
+                        gl.rlPushMatrix();
+                        defer gl.rlPopMatrix();
+
+                        gl.rlRotatef(-earthRotation, 0, 0, 1);
+                        earth.model.draw(earthPos, 1, .white);
+                    }
                 }
+
+                raylib.drawCircle3D(earthPos, earth.radius.val() * 2, X, 90, .dark_gray);
+
+                {
+                    gl.rlPushMatrix();
+                    defer gl.rlPopMatrix();
+
+                    gl.rlRotatef(-sunRotation, 0, 1, 0);
+                    gl.rlTranslatef(200, 0, 0);
+                    raylib.drawSphere(Vector3.zero(), 10, .yellow);
+                    sunPos = Vector3.zero().transform(gl.rlGetMatrixTransform());
+                }
+                //raylib.drawGrid(10, 5);
             }
         }
     }
