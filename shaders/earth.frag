@@ -2,9 +2,9 @@
 
 in vec2 fragTexCoord;
 in vec3 fragNormal;
-in vec3 fragWorldPos;
-in vec3 fragColor;
-in vec3 fragPosition;
+//in vec3 fragWorldPos;
+//in vec3 fragColor;
+//in vec3 fragPosition;
 
 uniform sampler2D texture0; // day
 uniform sampler2D texture1; // night

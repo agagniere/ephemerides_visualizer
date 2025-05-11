@@ -5,7 +5,14 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const raylib = b.dependency("raylib", .{ .target = target, .optimize = optimize, .linux_display_backend = .X11, .shared = true });
+    const raylib = b.dependency("raylib", .{
+        .target = target,
+        .optimize = optimize,
+        .raudio = false,
+        .rshapes = false,
+        .linux_display_backend = .X11,
+        .shared = true,
+    });
     const rayzig = b.dependency("raylib_zig", .{ .target = target, .optimize = optimize });
     const units = b.dependency("unitz", .{ .target = target, .optimize = optimize });
 

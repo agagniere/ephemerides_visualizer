@@ -87,7 +87,6 @@ pub fn main() anyerror!void {
 
     while (!raylib.windowShouldClose()) {
         camera.update(.orbital);
-        //camera.update(.free);
         sunRotation += 0.1;
         earthRotation += 1;
         const nsd = sunPos.normalize();
@@ -130,7 +129,6 @@ pub fn main() anyerror!void {
                     raylib.drawSphere(Vector3.zero(), 5, .yellow);
                     sunPos = Vector3.zero().transform(gl.rlGetMatrixTransform());
                 }
-                //raylib.drawGrid(10, 5);
             }
         }
     }
