@@ -33,18 +33,11 @@ pub fn build(b: *std.Build) void {
             .install_subdir = "textures",
             .include_extensions = &.{".jpg"},
         });
-        const install_shaders = b.addInstallDirectory(.{
-            .source_dir = orbvis.path("res/shader"),
-            .install_dir = .{ .custom = "assets" },
-            .install_subdir = "shaders",
-            .include_extensions = &.{ ".vert", ".frag" },
-        });
         const options = b.addOptions();
         options.addOption([]const u8, "textures", b.getInstallPath(install_textures.options.install_dir, "textures"));
-        options.addOption([]const u8, "shaders", b.getInstallPath(install_shaders.options.install_dir, "shaders"));
+        options.addOptionPath("shaders", b.path("shaders"));
         exe_mod.addOptions("assets", options);
         exe.step.dependOn(&install_textures.step);
-        exe.step.dependOn(&install_shaders.step);
     }
     { // Run
         const run_step = b.step("run", "Run the app");

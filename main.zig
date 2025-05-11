@@ -39,20 +39,26 @@ pub fn main() anyerror!void {
     const screenWidth = 1200;
     const screenHeight = 600;
 
+    raylib.setConfigFlags(.{ .msaa_4x_hint = true, .vsync_hint = true });
     raylib.initWindow(screenWidth, screenHeight, "Visualize GNSS satellite orbits");
     defer raylib.closeWindow();
     raylib.setTargetFPS(60);
 
     var earth: Planet = try .init(.init(6_371));
     const earthPos: Vector3 = .{ .x = 0, .y = 0, .z = 0 };
-
     const earthDay = try raylib.loadImageFromMemory(".jpg", assets.texture.earth.day);
     defer earthDay.unload();
-    const earthNight = try raylib.loadImageFromMemory(".jpg", assets.texture.earth.night);
-    defer earthNight.unload();
-
-    const earthShader = try raylib.loadShaderFromMemory(assets.shader.earth.vertex, assets.shader.earth.fragment);
+    const earthSpecularImg = try raylib.loadImageFromMemory(".jpg", assets.texture.earth.specular);
+    defer earthSpecularImg.unload();
+    const earthDayTexture = try earthDay.toTexture();
+    defer earthDayTexture.unload();
+    const earthSpecular = try earthSpecularImg.toTexture();
+    defer earthSpecular.unload();
+    const earthShader = try raylib.loadShaderFromMemory(null, assets.shader.earth.fragment);
     defer raylib.unloadShader(earthShader);
+    earth.setShader(earthShader);
+    raylib.setMaterialTexture(earth.model.materials, .albedo, earthDayTexture);
+    raylib.setMaterialTexture(earth.model.materials, .metalness, earthSpecular);
 
     var camera: Camera = .{
         .position = .{ .x = 10, .y = 10, .z = 10 },
@@ -69,13 +75,12 @@ pub fn main() anyerror!void {
             raylib.beginDrawing();
             defer raylib.endDrawing();
 
-            raylib.clearBackground(.black);
+            raylib.clearBackground(.dark_gray);
             {
                 camera.begin();
                 defer camera.end();
 
                 earth.model.draw(earthPos, 1, .white);
-                //earthCloudModel.draw(earthPos, 1, .white);
                 raylib.drawCircle3D(earthPos, earth.radius.val() * 2, X.add(Y), 90.0, .light_gray);
                 raylib.drawCircle3D(earthPos, earth.radius.val() * 3, X, 90.0, .gray);
             }
