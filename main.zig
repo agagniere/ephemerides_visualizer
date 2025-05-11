@@ -66,7 +66,7 @@ pub fn main() anyerror!void {
 
     var earth: Planet = try .init(.init(6_371));
     const earthPos: Vector3 = .{ .x = 0, .y = 0, .z = 0 };
-    const earthShader = try raylib.loadShaderFromMemory(null, assets.shader.earth.fragment);
+    const earthShader = try raylib.loadShaderFromMemory(assets.shader.earth.vertex, assets.shader.earth.fragment);
     defer raylib.unloadShader(earthShader);
     earth.setShader(earthShader);
     try earth.addTexture(0, ".jpg", assets.texture.earth.day);

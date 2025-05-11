@@ -11,7 +11,7 @@ pub const texture = struct {
 
 pub const shader = struct {
     pub const earth = struct {
-        //pub const vertex = @embedFile(assets.shaders ++ "/earth.vert");
+        pub const vertex = @embedFile(assets.shaders ++ "/earth.vert");
         pub const fragment = @embedFile(assets.shaders ++ "/earth.frag");
     };
 };
