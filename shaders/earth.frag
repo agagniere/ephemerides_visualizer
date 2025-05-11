@@ -24,11 +24,10 @@ void main() {
     vec4 nightColor = texture(texture1, fragTexCoord);
     vec4 cloudColor = texture(texture2, fragTexCoord);
 
+    // Simple cloud blend
+    dayColor = mix(dayColor, cloudColor, cloudColor.r);
     // Blend day and night
     vec4 baseColor = mix(nightColor, dayColor, ndotl);
-
-    // Simple cloud blend (could be masked, etc.)
-    //baseColor = mix(baseColor, cloudColor, cloudColor.a);
 
     finalColor = baseColor * colDiffuse;
 }

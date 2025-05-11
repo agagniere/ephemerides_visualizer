@@ -127,7 +127,7 @@ pub fn main() anyerror!void {
 
                     gl.rlRotatef(-sunRotation, 0, 1, 0);
                     gl.rlTranslatef(200, 0, 0);
-                    raylib.drawSphere(Vector3.zero(), 10, .yellow);
+                    raylib.drawSphere(Vector3.zero(), 5, .yellow);
                     sunPos = Vector3.zero().transform(gl.rlGetMatrixTransform());
                 }
                 //raylib.drawGrid(10, 5);
