@@ -31,6 +31,20 @@ const Planet = struct {
         self.model.materials[0].shader = shader;
     }
 
+    fn addTexture(self: *Planet, id: u8, extension: [:0]const u8, asset: []const u8) !void {
+        var image = try raylib.loadImageFromMemory(extension, asset);
+        image.flipVertical();
+        image.rotateCCW();
+        const texture = try image.toTexture();
+        //const location = raylib.getShaderLocation(self.getShader(), name);
+        //raylib.setShaderValueTexture(self.getShader(), location, texture);
+        self.model.materials[0].maps[id].texture = texture;
+    }
+
+    fn getShader(self: Planet) Shader {
+        return self.model.materials[0].shader;
+    }
+
     fn deinit(self: *Planet) void {
         self.model.unload();
     }
@@ -44,6 +58,7 @@ pub fn main() anyerror!void {
     raylib.initWindow(screenWidth, screenHeight, "Visualize GNSS satellite orbits");
     defer raylib.closeWindow();
     raylib.setTargetFPS(60);
+
     var icon = try raylib.loadImageFromMemory(".png", assets.icon);
     defer icon.unload();
     icon.setFormat(.uncompressed_r8g8b8a8);
@@ -51,21 +66,13 @@ pub fn main() anyerror!void {
 
     var earth: Planet = try .init(.init(6_371));
     const earthPos: Vector3 = .{ .x = 0, .y = 0, .z = 0 };
-    var earthDay = try raylib.loadImageFromMemory(".jpg", assets.texture.earth.day);
-    earthDay.flipVertical();
-    earthDay.rotateCCW();
-    defer earthDay.unload();
-    const earthSpecularImg = try raylib.loadImageFromMemory(".jpg", assets.texture.earth.specular);
-    defer earthSpecularImg.unload();
-    const earthDayTexture = try earthDay.toTexture();
-    defer earthDayTexture.unload();
-    const earthSpecular = try earthSpecularImg.toTexture();
-    defer earthSpecular.unload();
     const earthShader = try raylib.loadShaderFromMemory(null, assets.shader.earth.fragment);
     defer raylib.unloadShader(earthShader);
-    //earth.setShader(earthShader);
-    raylib.setMaterialTexture(earth.model.materials, .albedo, earthDayTexture);
-    raylib.setMaterialTexture(earth.model.materials, .metalness, earthSpecular);
+    earth.setShader(earthShader);
+    try earth.addTexture(0, ".jpg", assets.texture.earth.day);
+    try earth.addTexture(1, ".jpg", assets.texture.earth.night);
+    try earth.addTexture(2, ".jpg", assets.texture.earth.clouds);
+    const loc_sundir = raylib.getShaderLocation(earth.getShader(), "sun_dir");
 
     var camera: Camera = .{
         .position = .{ .x = 15, .y = 5, .z = 15 },
@@ -79,10 +86,13 @@ pub fn main() anyerror!void {
     var sunPos: Vector3 = .{ .x = 200, .y = 0, .z = 0 };
 
     while (!raylib.windowShouldClose()) {
-        //camera.update(.orbital);
-        camera.update(.free);
+        camera.update(.orbital);
+        //camera.update(.free);
         sunRotation += 0.1;
         earthRotation += 1;
+        const nsd = sunPos.normalize();
+        const sun_dir: [3]f32 = .{ nsd.x, nsd.y, nsd.z };
+        raylib.setShaderValue(earth.getShader(), loc_sundir, &sun_dir, .vec3);
 
         {
             raylib.beginDrawing();
