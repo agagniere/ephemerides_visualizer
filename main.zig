@@ -2,9 +2,9 @@ const std = @import("std");
 const builtin = @import("builtin");
 
 const raylib = @import("raylib");
-const assets = @import("assets.zig");
+const assets = @import("src/assets.zig");
 const units = @import("units");
-const log_config = @import("log.zig");
+const log_config = @import("src/log.zig");
 
 const Camera = raylib.Camera3D;
 const Vector3 = raylib.Vector3;
