@@ -67,6 +67,8 @@ extern "c" fn vsnprintf(str: [*c]u8, size: usize, format: [*:0]const u8, ap: *st
 var log_buffer: std.ArrayList(u8) = undefined;
 
 fn raylib_log_callback(level: raylib.TraceLogLevel, format: [*:0]const u8, args: *std.builtin.VaList) callconv(.C) void {
+    const raylog = log.scoped(.raylib);
+
     var args_copy = @cVaCopy(args);
     defer @cVaEnd(&args_copy);
     const size = vsnprintf(null, 0, format, &args_copy);
@@ -74,11 +76,11 @@ fn raylib_log_callback(level: raylib.TraceLogLevel, format: [*:0]const u8, args:
     log_buffer.items.len = @intCast(vsnprintf(log_buffer.items.ptr, log_buffer.capacity, format, args));
 
     switch (level) {
-        .trace, .debug => log.debug("{s}", .{log_buffer.items}),
-        .info => log.info("{s}", .{log_buffer.items}),
-        .warning => log.warn("{s}", .{log_buffer.items}),
-        .err => log.err("{s}", .{log_buffer.items}),
-        .fatal => log.err("[FATAL] {s}", .{log_buffer.items}),
+        .trace, .debug => raylog.debug("{s}", .{log_buffer.items}),
+        .info => raylog.info("{s}", .{log_buffer.items}),
+        .warning => raylog.warn("{s}", .{log_buffer.items}),
+        .err => raylog.err("{s}", .{log_buffer.items}),
+        .fatal => raylog.err("[FATAL] {s}", .{log_buffer.items}),
         else => unreachable,
     }
     log_buffer.clearRetainingCapacity();
@@ -137,8 +139,8 @@ pub fn main() !void {
 
     while (!raylib.windowShouldClose()) {
         camera.update(.orbital);
-        sunRotation += 0.1;
-        earthRotation += 1;
+        sunRotation += 0.01;
+        earthRotation += 0.5;
         const nsd = sunPos.normalize();
         const sun_dir: [3]f32 = .{ nsd.x, nsd.y, nsd.z };
         raylib.setShaderValue(earth.getShader(), loc_sundir, &sun_dir, .vec3);
