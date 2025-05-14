@@ -1,7 +1,10 @@
 const std = @import("std");
+const builtin = @import("builtin");
+
 const raylib = @import("raylib");
 const assets = @import("assets.zig");
 const units = @import("units");
+const axe = @import("axe");
 
 const Camera = raylib.Camera3D;
 const Vector3 = raylib.Vector3;
@@ -50,12 +53,51 @@ const Planet = struct {
     }
 };
 
-pub fn main() anyerror!void {
-    const screenWidth = 1200;
-    const screenHeight = 600;
+const log = axe.Axe(.{
+    .format = "[%l%s%L] %m\n",
+    .scope_format = " %",
+    .loc_format = " %f:%F:%l",
+});
+pub const std_options: std.Options = .{ .logFn = log.log };
 
-    raylib.setConfigFlags(.{ .msaa_4x_hint = true, .vsync_hint = true });
-    raylib.initWindow(screenWidth, screenHeight, "Visualize GNSS satellite orbits");
+const RaylibLogCallback = *const fn (level: gl.rlTraceLogLevel, text: [*:0]const u8, args: std.builtin.VaList) callconv(.C) void;
+extern "c" fn SetTraceLogCallback(callback: RaylibLogCallback) void;
+
+fn raylib_log_callback(ray_level: gl.rlTraceLogLevel, text: [*:0]const u8, args: std.builtin.VaList) callconv(.C) void {
+    _ = args;
+    switch (ray_level) {
+        .rl_log_trace, .rl_log_debug => log.debug("{s}", .{text}),
+        .rl_log_info => log.info("{s}", .{text}),
+        .rl_log_warning => log.warn("{s}", .{text}),
+        .rl_log_error => log.err("{s}", .{text}),
+        .rl_log_fatal => log.err("[FATAL] {s}", .{text}),
+        else => unreachable,
+    }
+}
+
+var debug_allocator: std.heap.DebugAllocator(.{}) = .init;
+
+pub fn main() anyerror!void {
+    const gpa, const is_debug = switch (builtin.mode) {
+        .Debug, .ReleaseSafe => .{ debug_allocator.allocator(), true },
+        .ReleaseFast, .ReleaseSmall => .{ std.heap.smp_allocator, false },
+    };
+    defer if (is_debug) {
+        _ = debug_allocator.deinit();
+    };
+    var env = try std.process.getEnvMap(gpa);
+    defer env.deinit();
+    try log.init(gpa, null, &env);
+    defer log.deinit(gpa);
+
+    raylib.setConfigFlags(.{
+        .msaa_4x_hint = true,
+        .vsync_hint = true,
+        .fullscreen_mode = true,
+        .window_resizable = true,
+    });
+    SetTraceLogCallback(raylib_log_callback);
+    raylib.initWindow(1920, 1080, "Visualize GNSS satellite orbits");
     defer raylib.closeWindow();
     raylib.setTargetFPS(60);
 

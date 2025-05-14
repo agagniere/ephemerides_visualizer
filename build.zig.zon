@@ -19,6 +19,10 @@
             .url = "git+https://github.com/agagniere/unitz?ref=master#4a07ae5d4d1d3c38be3a9ef5ebc622851f057ca5",
             .hash = "unitz-0.1.0-SkAk5IBwAADftk39UmGHAx3KeAlHWMdYkENGJW6mJJuF",
         },
+        .axe = .{
+            .url = "git+https://github.com/Ratakor/axe?ref=master#b84413eeb75adb1bc738e67a32d946a17088786f",
+            .hash = "axe-0.6.1-M2JU5WqKAAA7CfrdSVgJVGtbePPUjZapmOsVW_m5vl1w",
+        },
     },
     .paths = .{
         "build.zig",

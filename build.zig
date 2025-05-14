@@ -15,6 +15,7 @@ pub fn build(b: *std.Build) void {
     });
     const rayzig = b.dependency("raylib_zig", .{ .target = target, .optimize = optimize });
     const units = b.dependency("unitz", .{ .target = target, .optimize = optimize });
+    const axe = b.dependency("axe", .{ .target = target, .optimize = optimize });
 
     const exe_mod = b.createModule(.{
         .root_source_file = b.path("main.zig"),
@@ -25,6 +26,7 @@ pub fn build(b: *std.Build) void {
     exe_mod.addImport("raylib", rayzig.module("raylib"));
     exe_mod.addImport("raygui", rayzig.module("raygui"));
     exe_mod.addImport("units", units.module("unitz"));
+    exe_mod.addImport("axe", axe.module("axe"));
     const exe = b.addExecutable(.{
         .name = "ephemerides_visualizer",
         .root_module = exe_mod,
