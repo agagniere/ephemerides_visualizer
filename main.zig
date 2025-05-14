@@ -60,31 +60,39 @@ const log = axe.Axe(.{
 });
 pub const std_options: std.Options = .{ .logFn = log.log };
 
-const RaylibLogCallback = *const fn (level: gl.rlTraceLogLevel, text: [*:0]const u8, args: std.builtin.VaList) callconv(.C) void;
+const RaylibLogCallback = *const fn (level: raylib.TraceLogLevel, format: [*:0]const u8, args: *std.builtin.VaList) callconv(.C) void;
 extern "c" fn SetTraceLogCallback(callback: RaylibLogCallback) void;
+extern "c" fn vsnprintf(str: [*c]u8, size: usize, format: [*:0]const u8, ap: *std.builtin.VaList) c_int;
 
-fn raylib_log_callback(ray_level: gl.rlTraceLogLevel, text: [*:0]const u8, args: std.builtin.VaList) callconv(.C) void {
-    _ = args;
-    switch (ray_level) {
-        .rl_log_trace, .rl_log_debug => log.debug("{s}", .{text}),
-        .rl_log_info => log.info("{s}", .{text}),
-        .rl_log_warning => log.warn("{s}", .{text}),
-        .rl_log_error => log.err("{s}", .{text}),
-        .rl_log_fatal => log.err("[FATAL] {s}", .{text}),
+var log_buffer: std.ArrayList(u8) = undefined;
+
+fn raylib_log_callback(level: raylib.TraceLogLevel, format: [*:0]const u8, args: *std.builtin.VaList) callconv(.C) void {
+    var args_copy = @cVaCopy(args);
+    defer @cVaEnd(&args_copy);
+    const size = vsnprintf(null, 0, format, &args_copy);
+    log_buffer.ensureTotalCapacity(@intCast(size + 1)) catch unreachable;
+    log_buffer.items.len = @intCast(vsnprintf(log_buffer.items.ptr, log_buffer.capacity, format, args));
+
+    switch (level) {
+        .trace, .debug => log.debug("{s}", .{log_buffer.items}),
+        .info => log.info("{s}", .{log_buffer.items}),
+        .warning => log.warn("{s}", .{log_buffer.items}),
+        .err => log.err("{s}", .{log_buffer.items}),
+        .fatal => log.err("[FATAL] {s}", .{log_buffer.items}),
         else => unreachable,
     }
+    log_buffer.clearRetainingCapacity();
 }
 
-var debug_allocator: std.heap.DebugAllocator(.{}) = .init;
-
-pub fn main() anyerror!void {
-    const gpa, const is_debug = switch (builtin.mode) {
-        .Debug, .ReleaseSafe => .{ debug_allocator.allocator(), true },
-        .ReleaseFast, .ReleaseSmall => .{ std.heap.smp_allocator, false },
+pub fn main() !void {
+    var debug_allocator: std.heap.DebugAllocator(.{}) = .init;
+    defer _ = debug_allocator.deinit();
+    const gpa = switch (builtin.mode) {
+        .Debug, .ReleaseSafe => debug_allocator.allocator(),
+        .ReleaseFast, .ReleaseSmall => std.heap.smp_allocator,
     };
-    defer if (is_debug) {
-        _ = debug_allocator.deinit();
-    };
+    log_buffer = .init(gpa);
+    defer log_buffer.deinit();
     var env = try std.process.getEnvMap(gpa);
     defer env.deinit();
     try log.init(gpa, null, &env);
