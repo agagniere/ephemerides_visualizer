@@ -27,8 +27,9 @@
     .paths = .{
         "build.zig",
         "build.zig.zon",
-        "main.zig",
-        "assets.zig",
+        "src",
+        "images",
+        "shaders",
         "README.md",
         "LICENSE",
     },

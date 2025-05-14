@@ -4,13 +4,14 @@ const builtin = @import("builtin");
 const raylib = @import("raylib");
 const assets = @import("assets.zig");
 const units = @import("units");
-const axe = @import("axe");
+const log_config = @import("log.zig");
 
 const Camera = raylib.Camera3D;
 const Vector3 = raylib.Vector3;
 const Texture = raylib.Texture2D;
 const Shader = raylib.Shader;
 const gl = raylib.gl;
+const log = log_config.axe_log;
 
 const km = units.evalQuantity(f32, "km", .{});
 const Mm = units.evalQuantity(f32, "Mm", .{});
@@ -53,38 +54,7 @@ const Planet = struct {
     }
 };
 
-const log = axe.Axe(.{
-    .format = "[%l%s%L] %m\n",
-    .scope_format = " %",
-    .loc_format = " %f:%F:%l",
-});
 pub const std_options: std.Options = .{ .logFn = log.log };
-
-const RaylibLogCallback = *const fn (level: raylib.TraceLogLevel, format: [*:0]const u8, args: *std.builtin.VaList) callconv(.C) void;
-extern "c" fn SetTraceLogCallback(callback: RaylibLogCallback) void;
-extern "c" fn vsnprintf(str: [*c]u8, size: usize, format: [*:0]const u8, ap: *std.builtin.VaList) c_int;
-
-var log_buffer: std.ArrayList(u8) = undefined;
-
-fn raylib_log_callback(level: raylib.TraceLogLevel, format: [*:0]const u8, args: *std.builtin.VaList) callconv(.C) void {
-    const raylog = log.scoped(.raylib);
-
-    var args_copy = @cVaCopy(args);
-    defer @cVaEnd(&args_copy);
-    const size = vsnprintf(null, 0, format, &args_copy);
-    log_buffer.ensureTotalCapacity(@intCast(size + 1)) catch unreachable;
-    log_buffer.items.len = @intCast(vsnprintf(log_buffer.items.ptr, log_buffer.capacity, format, args));
-
-    switch (level) {
-        .trace, .debug => raylog.debug("{s}", .{log_buffer.items}),
-        .info => raylog.info("{s}", .{log_buffer.items}),
-        .warning => raylog.warn("{s}", .{log_buffer.items}),
-        .err => raylog.err("{s}", .{log_buffer.items}),
-        .fatal => raylog.err("[FATAL] {s}", .{log_buffer.items}),
-        else => unreachable,
-    }
-    log_buffer.clearRetainingCapacity();
-}
 
 pub fn main() !void {
     var debug_allocator: std.heap.DebugAllocator(.{}) = .init;
@@ -93,12 +63,9 @@ pub fn main() !void {
         .Debug, .ReleaseSafe => debug_allocator.allocator(),
         .ReleaseFast, .ReleaseSmall => std.heap.smp_allocator,
     };
-    log_buffer = .init(gpa);
-    defer log_buffer.deinit();
-    var env = try std.process.getEnvMap(gpa);
-    defer env.deinit();
-    try log.init(gpa, null, &env);
-    defer log.deinit(gpa);
+
+    try log_config.init(gpa);
+    defer log_config.deinit(gpa);
 
     raylib.setConfigFlags(.{
         .msaa_4x_hint = true,
@@ -106,7 +73,6 @@ pub fn main() !void {
         .fullscreen_mode = true,
         .window_resizable = true,
     });
-    SetTraceLogCallback(raylib_log_callback);
     raylib.initWindow(1920, 1080, "Visualize GNSS satellite orbits");
     defer raylib.closeWindow();
     raylib.setTargetFPS(60);
