@@ -41,17 +41,32 @@ const raylog = axe_log.scoped(.raylib);
 fn raylib_log_callback(level: raylib.TraceLogLevel, format: [*:0]const u8, args: *std.builtin.VaList) callconv(.C) void {
     var args_copy = @cVaCopy(args);
     defer @cVaEnd(&args_copy);
-    const size = c.vsnprintf(null, 0, format, &args_copy);
-    log_buffer.ensureTotalCapacity(@intCast(size + 1)) catch unreachable;
-    log_buffer.items.len = @intCast(c.vsnprintf(log_buffer.items.ptr, log_buffer.capacity, format, args));
+
+    const needed = c.vsnprintf(log_buffer.items.ptr, log_buffer.capacity, format, args);
+    const status = std.posix.errno(needed);
+
+    if (status != .SUCCESS) {
+        axe_log.errAt(@src(), "vsnprintf failed: {s}", .{@tagName(status)});
+        return;
+    }
+
+    const length: usize = @intCast(needed);
+    if (length >= log_buffer.capacity) {
+        log_buffer.ensureTotalCapacity(length) catch |err| {
+            axe_log.errAt(@src(), "Failed to grow buffer: {s}", .{@errorName(err)});
+            return;
+        };
+        _ = c.vsnprintf(log_buffer.items.ptr, log_buffer.capacity, format, &args_copy);
+    }
+    log_buffer.items.len = length;
 
     switch (level) {
-        .trace, .debug => raylog.debug("{s}", .{log_buffer.items}),
+        .all, .trace, .debug => raylog.debug("{s}", .{log_buffer.items}),
         .info => raylog.info("{s}", .{log_buffer.items}),
         .warning => raylog.warn("{s}", .{log_buffer.items}),
         .err => raylog.err("{s}", .{log_buffer.items}),
         .fatal => raylog.err("[FATAL] {s}", .{log_buffer.items}),
-        else => unreachable,
+        .none => {},
     }
     log_buffer.clearRetainingCapacity();
 }
