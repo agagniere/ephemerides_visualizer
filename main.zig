@@ -59,11 +59,14 @@ fn drawVector(vector: Vector3, color: raylib.Color) void {
     raylib.drawCylinderEx(vector.scale(0.8), vector, 0.5, 0.01, 20, color);
 }
 
-const log_levels = .{
-    .this = std.log.Level.debug,
-    .raylib = raylib.TraceLogLevel.warning,
+pub const std_options: std.Options = .{
+    .logFn = log.log,
+    .log_level = .debug,
+    .log_scope_levels = &.{
+        .{ .scope = .raylib, .level = .debug }, // Raylib logs
+        .{ .scope = .shader, .level = .debug }, // Shader compilation errors
+    },
 };
-pub const std_options: std.Options = .{ .logFn = log.log, .log_level = log_levels.this };
 
 pub fn main() !void {
     var debug_allocator: std.heap.DebugAllocator(.{}) = .init;
@@ -73,7 +76,7 @@ pub fn main() !void {
         .ReleaseFast, .ReleaseSmall => std.heap.smp_allocator,
     };
 
-    try log_config.init(gpa, log_levels.raylib);
+    try log_config.init(gpa, .all);
     defer log_config.deinit(gpa);
 
     raylib.setConfigFlags(.{

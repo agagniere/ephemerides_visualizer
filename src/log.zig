@@ -50,11 +50,13 @@ const raylog = axe_log.scoped(.raylib);
 const shalog = axe_log.scoped(.shader);
 
 fn raylib_log_callback(level: raylib.TraceLogLevel, format: [*:0]const u8, args: *std.builtin.VaList) callconv(.C) void {
+    // This log may dump hundreds of lines, that actually are logs from the shader compiler
     if (std.mem.eql(u8, std.mem.span(format), "SHADER: [ID %i] Compile error: %s")) {
         shalog.err("Failed to compile shader [ID {}]", .{@cVaArg(args, c_int)});
         log_shader_errors(std.mem.span(@cVaArg(args, [*:0]const u8))) catch unreachable;
         return;
     }
+
     var args_copy = @cVaCopy(args);
     defer @cVaEnd(&args_copy);
 
@@ -88,6 +90,7 @@ fn raylib_log_callback(level: raylib.TraceLogLevel, format: [*:0]const u8, args:
     log_buffer.clearRetainingCapacity();
 }
 
+/// Output each line as a separate log
 fn log_shader_errors(messages: []const u8) !void {
     var lines = std.mem.tokenizeScalar(u8, messages, '\n');
 
@@ -97,11 +100,15 @@ fn log_shader_errors(messages: []const u8) !void {
         const location = columns.next().?;
         const level = columns.next().?;
         const message = columns.next().?;
+        var locations = std.mem.tokenizeAny(u8, location, ":()");
+        _ = locations.next().?;
+        const lne = locations.next().?;
+        const col = locations.next().?;
 
         switch (level[0]) {
-            'w' => shalog.warn("{s}: {s}", .{ location, message }),
-            'e' => shalog.err("{s}: {s}", .{ location, message }),
-            else => shalog.debug("{s}: {s}", .{ location, message }),
+            'w' => shalog.warn("{s}:{s}: {s}", .{ lne, col, message }),
+            'e' => shalog.err("{s}:{s}: {s}", .{ lne, col, message }),
+            else => shalog.debug("{s}:{s}: {s}", .{ lne, col, message }),
         }
     }
 }
