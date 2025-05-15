@@ -38,7 +38,7 @@ const Planet = struct {
     fn addTexture(self: *Planet, id: u8, extension: [:0]const u8, asset: []const u8) !void {
         var image = try raylib.loadImageFromMemory(extension, asset);
         image.flipVertical();
-        image.rotateCCW();
+        image.rotateCW();
         const texture = try image.toTexture();
         //const location = raylib.getShaderLocation(self.getShader(), name);
         //raylib.setShaderValueTexture(self.getShader(), location, texture);
@@ -53,6 +53,11 @@ const Planet = struct {
         self.model.unload();
     }
 };
+
+fn drawVector(vector: Vector3, color: raylib.Color) void {
+    raylib.drawCylinderEx(Vector3.zero(), vector.scale(0.8), 0.1, 0.1, 10, color);
+    raylib.drawCylinderEx(vector.scale(0.8), vector, 0.5, 0.01, 20, color);
+}
 
 const log_levels = .{
     .this = std.log.Level.debug,
@@ -87,7 +92,7 @@ pub fn main() !void {
     icon.useAsWindowIcon();
 
     var earth: Planet = try .init(.init(6_371));
-    const earthPos: Vector3 = .{ .x = 0, .y = 0, .z = 0 };
+    const earthPos: Vector3 = .zero();
     const earthShader = try raylib.loadShaderFromMemory(assets.shader.earth.vertex, assets.shader.earth.fragment);
     defer raylib.unloadShader(earthShader);
     earth.setShader(earthShader);
@@ -97,60 +102,74 @@ pub fn main() !void {
     const loc_sundir = raylib.getShaderLocation(earth.getShader(), "sun_dir");
 
     var camera: Camera = .{
-        .position = .{ .x = 15, .y = 5, .z = 15 },
+        .position = .{ .x = 10, .y = -20, .z = 5 },
         .target = earthPos,
-        .up = Y,
+        .up = Z,
         .fovy = 65.0,
         .projection = .perspective,
     };
     var sunRotation: f32 = 0;
     var earthRotation: f32 = 0;
-    var sunPos: Vector3 = .{ .x = 200, .y = 0, .z = 0 };
+    var sunPos: Vector3 = .{ .x = 0, .y = 200, .z = 0 };
 
+    raylib.disableCursor();
     while (!raylib.windowShouldClose()) {
-        camera.update(.orbital);
+        camera.update(.third_person);
         sunRotation += 0.01;
         earthRotation += 0.5;
         const nsd = sunPos.normalize();
         const sun_dir: [3]f32 = .{ nsd.x, nsd.y, nsd.z };
         raylib.setShaderValue(earth.getShader(), loc_sundir, &sun_dir, .vec3);
 
+        raylib.beginDrawing();
+        defer raylib.endDrawing();
+
+        raylib.clearBackground(.black);
         {
-            raylib.beginDrawing();
-            defer raylib.endDrawing();
+            camera.begin();
+            defer camera.end();
 
-            raylib.clearBackground(.black);
+            drawVector(X.scale(20), .white);
+            drawVector(Y.scale(20), .red);
+            drawVector(Z.scale(20), .green);
+
             {
-                camera.begin();
-                defer camera.end();
+                gl.rlPushMatrix();
+                defer gl.rlPopMatrix();
+
+                gl.rlRotatef(23.5, 1, 0, 0);
+
+                //drawVector(X.scale(10), .white);
+                drawVector(Y.scale(10), .red);
+                drawVector(Z.scale(10), .green);
+
+                raylib.drawCircle3D(earthPos, earth.radius.val() * 1.5, X, 0, .gray);
+                //camera.up = Z.transform(gl.rlGetMatrixTransform());
 
                 {
                     gl.rlPushMatrix();
                     defer gl.rlPopMatrix();
 
-                    gl.rlRotatef(67, 1, 0, 0);
-                    raylib.drawCircle3D(earthPos, earth.radius.val() * 2, X, 0, .gray);
-
-                    {
-                        gl.rlPushMatrix();
-                        defer gl.rlPopMatrix();
-
-                        gl.rlRotatef(-earthRotation, 0, 0, 1);
-                        earth.model.draw(earthPos, 1, .white);
-                    }
+                    gl.rlRotatef(-earthRotation, 0, 0, 1);
+                    drawVector(X.scale(10), .white);
+                    drawVector(Y.scale(10), .red);
+                    //drawVector(Z.scale(10), .green);
+                    earth.model.draw(earthPos, 1, .white);
                 }
+            }
 
-                raylib.drawCircle3D(earthPos, earth.radius.val() * 2, X, 90, .dark_gray);
+            raylib.drawCircle3D(earthPos, earth.radius.val() * 2, X, 0, .dark_gray);
+            raylib.drawCircle3D(earthPos, earth.radius.val() * 3, X, 0, .dark_gray);
+            raylib.drawCircle3D(earthPos, earth.radius.val() * 4, X, 0, .dark_gray);
 
-                {
-                    gl.rlPushMatrix();
-                    defer gl.rlPopMatrix();
+            {
+                gl.rlPushMatrix();
+                defer gl.rlPopMatrix();
 
-                    gl.rlRotatef(-sunRotation, 0, 1, 0);
-                    gl.rlTranslatef(200, 0, 0);
-                    raylib.drawSphere(Vector3.zero(), 5, .yellow);
-                    sunPos = Vector3.zero().transform(gl.rlGetMatrixTransform());
-                }
+                gl.rlRotatef(-sunRotation, 0, 0, 1);
+                gl.rlTranslatef(0, 200, 0);
+                raylib.drawSphere(Vector3.zero(), 5, .yellow);
+                sunPos = Vector3.zero().transform(gl.rlGetMatrixTransform());
             }
         }
     }
