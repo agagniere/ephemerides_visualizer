@@ -54,7 +54,11 @@ const Planet = struct {
     }
 };
 
-pub const std_options: std.Options = .{ .logFn = log.log };
+const log_levels = .{
+    .this = std.log.Level.debug,
+    .raylib = raylib.TraceLogLevel.warning,
+};
+pub const std_options: std.Options = .{ .logFn = log.log, .log_level = log_levels.this };
 
 pub fn main() !void {
     var debug_allocator: std.heap.DebugAllocator(.{}) = .init;
@@ -64,7 +68,7 @@ pub fn main() !void {
         .ReleaseFast, .ReleaseSmall => std.heap.smp_allocator,
     };
 
-    try log_config.init(gpa);
+    try log_config.init(gpa, log_levels.raylib);
     defer log_config.deinit(gpa);
 
     raylib.setConfigFlags(.{
