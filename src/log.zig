@@ -47,10 +47,16 @@ const c = struct {
 };
 
 const raylog = axe_log.scoped(.raylib);
+const shalog = axe_log.scoped(.shader);
 
 fn raylib_log_callback(level: raylib.TraceLogLevel, format: [*:0]const u8, args: *std.builtin.VaList) callconv(.C) void {
-    //var args_copy = @cVaCopy(args);
-    //defer @cVaEnd(&args_copy);
+    if (std.mem.eql(u8, std.mem.span(format), "SHADER: [ID %i] Compile error: %s")) {
+        shalog.err("Failed to compile shader [ID {}]", .{@cVaArg(args, c_int)});
+        log_shader_errors(std.mem.span(@cVaArg(args, [*:0]const u8))) catch unreachable;
+        return;
+    }
+    var args_copy = @cVaCopy(args);
+    defer @cVaEnd(&args_copy);
 
     const needed = c.vsnprintf(log_buffer.items.ptr, log_buffer.capacity, format, args);
     const status = std.posix.errno(needed);
@@ -62,12 +68,11 @@ fn raylib_log_callback(level: raylib.TraceLogLevel, format: [*:0]const u8, args:
 
     const length: usize = @intCast(needed);
     if (length >= log_buffer.capacity) {
-        unreachable;
-        // log_buffer.ensureTotalCapacity(length) catch |err| {
-        //     axe_log.errAt(@src(), "Failed to grow buffer: {s}", .{@errorName(err)});
-        //     return;
-        // };
-        // _ = c.vsnprintf(log_buffer.items.ptr, log_buffer.capacity, format, &args_copy);
+        log_buffer.ensureTotalCapacity(length) catch |err| {
+            axe_log.errAt(@src(), "Failed to grow buffer: {s}", .{@errorName(err)});
+            return;
+        };
+        _ = c.vsnprintf(log_buffer.items.ptr, log_buffer.capacity, format, &args_copy);
     }
     log_buffer.items.len = length;
 
@@ -81,4 +86,22 @@ fn raylib_log_callback(level: raylib.TraceLogLevel, format: [*:0]const u8, args:
         .all, .none => unreachable,
     }
     log_buffer.clearRetainingCapacity();
+}
+
+fn log_shader_errors(messages: []const u8) !void {
+    var lines = std.mem.tokenizeScalar(u8, messages, '\n');
+
+    while (lines.next()) |line| {
+        var columns = std.mem.tokenizeSequence(u8, line, ": ");
+
+        const location = columns.next().?;
+        const level = columns.next().?;
+        const message = columns.next().?;
+
+        switch (level[0]) {
+            'w' => shalog.warn("{s}: {s}", .{ location, message }),
+            'e' => shalog.err("{s}: {s}", .{ location, message }),
+            else => shalog.debug("{s}: {s}", .{ location, message }),
+        }
+    }
 }
