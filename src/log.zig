@@ -49,6 +49,7 @@ const c = struct {
 const raylog = axe_log.scoped(.raylib);
 const shalog = axe_log.scoped(.shader);
 
+/// Output raylib logs as zig logs
 fn raylib_log_callback(level: raylib.TraceLogLevel, format: [*:0]const u8, args: *std.builtin.VaList) callconv(.C) void {
     // This log may dump hundreds of lines, that actually are logs from the shader compiler
     if (std.mem.eql(u8, std.mem.span(format), "SHADER: [ID %i] Compile error: %s")) {

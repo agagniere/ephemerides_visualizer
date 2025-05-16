@@ -35,14 +35,21 @@ const Planet = struct {
         self.model.materials[0].shader = shader;
     }
 
-    fn addTexture(self: *Planet, id: u8, extension: [:0]const u8, asset: []const u8) !void {
+    fn addTexture(self: *Planet, name: [:0]const u8, extension: [:0]const u8, asset: []const u8, locationIndex: raylib.ShaderLocationIndex, mapIndex: raylib.MaterialMapIndex) !void {
         var image = try raylib.loadImageFromMemory(extension, asset);
         image.flipVertical();
         image.rotateCW();
         const texture = try image.toTexture();
-        //const location = raylib.getShaderLocation(self.getShader(), name);
-        //raylib.setShaderValueTexture(self.getShader(), location, texture);
-        self.model.materials[0].maps[id].texture = texture;
+        raylib.setTextureFilter(texture, .anisotropic_16x);
+        const i: usize = @intCast(@intFromEnum(locationIndex));
+        const j: usize = @intCast(@intFromEnum(mapIndex));
+        self.getShader().locs[i] = raylib.getShaderLocation(self.getShader(), name);
+        if (self.getShader().locs[i] == -1)
+            return error.NoSuchUniform;
+        //self.model.materials[0].maps[j].value = 1;
+        //self.model.materials[0].maps[j].color = .blue;
+        self.model.materials[0].maps[j].texture = texture;
+        //raylib.setShaderValueTexture(self.getShader(), self.getShader().locs[i], texture);
     }
 
     fn getShader(self: Planet) Shader {
@@ -63,7 +70,7 @@ pub const std_options: std.Options = .{
     .logFn = log.log,
     .log_level = .debug,
     .log_scope_levels = &.{
-        .{ .scope = .raylib, .level = .debug }, // Raylib logs
+        .{ .scope = .raylib, .level = .warn }, // Raylib logs
         .{ .scope = .shader, .level = .debug }, // Shader compilation errors
     },
 };
@@ -99,9 +106,10 @@ pub fn main() !void {
     const earthShader = try raylib.loadShaderFromMemory(assets.shader.earth.vertex, assets.shader.earth.fragment);
     defer raylib.unloadShader(earthShader);
     earth.setShader(earthShader);
-    try earth.addTexture(0, ".jpg", assets.texture.earth.day);
-    try earth.addTexture(1, ".jpg", assets.texture.earth.night);
-    try earth.addTexture(2, ".jpg", assets.texture.earth.clouds);
+    try earth.addTexture("texture_day", ".jpg", assets.texture.earth.day, .map_albedo, .albedo);
+    try earth.addTexture("texture_night", ".jpg", assets.texture.earth.night, .map_emission, .emission);
+    try earth.addTexture("texture_clouds", ".jpg", assets.texture.earth.clouds, .map_occlusion, .occlusion);
+    //try earth.addTexture("texture_specular", ".jpg", assets.texture.earth.specular, .map_metalness, .metalness);
     const loc_sundir = raylib.getShaderLocation(earth.getShader(), "sun_dir");
 
     var camera: Camera = .{

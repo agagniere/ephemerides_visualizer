@@ -12,13 +12,13 @@ uniform mat4 matNormal;
 out vec2 fragTexCoord;
 out vec3 fragNormal;
 //out vec3 fragColor;
-//out vec3 fragPosition;
+out vec3 fragPosition;
 //out vec3 fragWorldPos;
 
 void main() {
     fragTexCoord = vertexTexCoord;
 	//fragColor = vertexColor;
-	//fragPosition = vertexPosition;
+	fragPosition = vertexPosition;
 
     //vec4 worldPos = matModel * vec4(vertexPosition, 1.0);
     //fragWorldPos = worldPos.xyz;
