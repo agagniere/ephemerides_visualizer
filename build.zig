@@ -23,11 +23,12 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
         .link_libc = true,
+        .imports = &.{
+            .{ .name = "raylib", .module = rayzig.module("raylib") },
+            .{ .name = "units", .module = units.module("unitz") },
+            .{ .name = "axe", .module = axe.module("axe") },
+        },
     });
-    exe_mod.addImport("raylib", rayzig.module("raylib"));
-    exe_mod.addImport("raygui", rayzig.module("raygui"));
-    exe_mod.addImport("units", units.module("unitz"));
-    exe_mod.addImport("axe", axe.module("axe"));
     const exe = b.addExecutable(.{
         .name = "ephemerides_visualizer",
         .root_module = exe_mod,

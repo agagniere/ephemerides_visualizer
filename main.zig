@@ -96,21 +96,27 @@ pub fn main() !void {
     defer raylib.closeWindow();
     raylib.setTargetFPS(60);
 
-    var icon = try raylib.loadImageFromMemory(".png", assets.icon);
-    defer icon.unload();
-    icon.setFormat(.uncompressed_r8g8b8a8);
-    icon.useAsWindowIcon();
+    const earthShader = try raylib.loadShaderFromMemory(assets.shader.earth.vertex, assets.shader.earth.fragment);
+    defer raylib.unloadShader(earthShader);
 
     var earth: Planet = try .init(.init(6_371));
     const earthPos: Vector3 = .zero();
-    const earthShader = try raylib.loadShaderFromMemory(assets.shader.earth.vertex, assets.shader.earth.fragment);
-    defer raylib.unloadShader(earthShader);
     earth.setShader(earthShader);
     try earth.addTexture("texture_day", ".jpg", assets.texture.earth.day, .map_albedo, .albedo);
     try earth.addTexture("texture_night", ".jpg", assets.texture.earth.night, .map_emission, .emission);
     try earth.addTexture("texture_clouds", ".jpg", assets.texture.earth.clouds, .map_occlusion, .occlusion);
-    //try earth.addTexture("texture_specular", ".jpg", assets.texture.earth.specular, .map_metalness, .metalness);
+    try earth.addTexture("texture_specular", ".jpg", assets.texture.earth.specular, .map_metalness, .metalness);
     const loc_sundir = raylib.getShaderLocation(earth.getShader(), "sun_dir");
+    if (loc_sundir == -1)
+        return error.NoSuchUniform;
+    const loc_campos = raylib.getShaderLocation(earth.getShader(), "cam_pos");
+    if (loc_campos == -1)
+        return error.NoSuchUniform;
+
+    var icon = try raylib.loadImageFromMemory(".png", assets.icon);
+    defer icon.unload();
+    icon.setFormat(.uncompressed_r8g8b8a8);
+    icon.useAsWindowIcon();
 
     var camera: Camera = .{
         .position = .{ .x = 10, .y = -20, .z = 5 },
@@ -131,6 +137,8 @@ pub fn main() !void {
         const nsd = sunPos.normalize();
         const sun_dir: [3]f32 = .{ nsd.x, nsd.y, nsd.z };
         raylib.setShaderValue(earth.getShader(), loc_sundir, &sun_dir, .vec3);
+        const cam_pos: [3]f32 = .{ camera.position.x, camera.position.y, camera.position.z };
+        raylib.setShaderValue(earth.getShader(), loc_campos, &cam_pos, .vec3);
 
         raylib.beginDrawing();
         defer raylib.endDrawing();

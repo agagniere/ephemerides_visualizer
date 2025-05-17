@@ -109,7 +109,7 @@ fn log_shader_errors(messages: []const u8) !void {
         switch (level[0]) {
             'w' => shalog.warn("{s}:{s}: {s}", .{ lne, col, message }),
             'e' => shalog.err("{s}:{s}: {s}", .{ lne, col, message }),
-            else => shalog.debug("{s}:{s}: {s}", .{ lne, col, message }),
+            else => shalog.debug("[{s}] {s}:{s}: {s}", .{ level, lne, col, message }),
         }
     }
 }
