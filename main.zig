@@ -46,10 +46,7 @@ const Planet = struct {
         self.getShader().locs[i] = raylib.getShaderLocation(self.getShader(), name);
         if (self.getShader().locs[i] == -1)
             return error.NoSuchUniform;
-        //self.model.materials[0].maps[j].value = 1;
-        //self.model.materials[0].maps[j].color = .blue;
         self.model.materials[0].maps[j].texture = texture;
-        //raylib.setShaderValueTexture(self.getShader(), self.getShader().locs[i], texture);
     }
 
     fn getShader(self: Planet) Shader {
@@ -74,6 +71,8 @@ pub const std_options: std.Options = .{
         .{ .scope = .shader, .level = .debug }, // Shader compilation errors
     },
 };
+
+const camera_rotation_sensitivity = 0.003;
 
 pub fn main() !void {
     var debug_allocator: std.heap.DebugAllocator(.{}) = .init;
@@ -112,14 +111,16 @@ pub fn main() !void {
     const loc_campos = raylib.getShaderLocation(earth.getShader(), "cam_pos");
     if (loc_campos == -1)
         return error.NoSuchUniform;
+    earth.model.transform = raylib.Matrix.rotate(Z, std.math.pi);
 
     var icon = try raylib.loadImageFromMemory(".png", assets.icon);
     defer icon.unload();
     icon.setFormat(.uncompressed_r8g8b8a8);
     icon.useAsWindowIcon();
 
+    var cameraOffset: Vector3 = .{ .x = 10, .y = -20, .z = 5 };
     var camera: Camera = .{
-        .position = .{ .x = 10, .y = -20, .z = 5 },
+        .position = cameraOffset,
         .target = earthPos,
         .up = Z,
         .fovy = 65.0,
@@ -131,8 +132,14 @@ pub fn main() !void {
 
     raylib.disableCursor();
     while (!raylib.windowShouldClose()) {
-        camera.update(.third_person);
-        sunRotation += 0.01;
+        const mouseDelta = raylib.getMouseDelta();
+        const mouseZoom = raylib.getMouseWheelMove();
+        const distToTarget = earthPos.distance(cameraOffset);
+        if (mouseZoom < 0 or distToTarget > earth.radius.val() * 2)
+            cameraOffset = cameraOffset.add(earthPos.subtract(cameraOffset).normalize().scale(mouseZoom));
+        cameraOffset = cameraOffset.rotateByAxisAngle(Z, -mouseDelta.x * camera_rotation_sensitivity);
+
+        sunRotation += 0.1;
         earthRotation += 0.5;
         const nsd = sunPos.normalize();
         const sun_dir: [3]f32 = .{ nsd.x, nsd.y, nsd.z };
@@ -148,31 +155,26 @@ pub fn main() !void {
             camera.begin();
             defer camera.end();
 
-            drawVector(X.scale(20), .white);
-            drawVector(Y.scale(20), .red);
-            drawVector(Z.scale(20), .green);
-
             {
                 gl.rlPushMatrix();
                 defer gl.rlPopMatrix();
 
                 gl.rlRotatef(23.5, 1, 0, 0);
 
-                //drawVector(X.scale(10), .white);
-                drawVector(Y.scale(10), .red);
-                drawVector(Z.scale(10), .green);
-
                 raylib.drawCircle3D(earthPos, earth.radius.val() * 1.5, X, 0, .gray);
-                //camera.up = Z.transform(gl.rlGetMatrixTransform());
 
                 {
                     gl.rlPushMatrix();
                     defer gl.rlPopMatrix();
 
                     gl.rlRotatef(-earthRotation, 0, 0, 1);
+
+                    camera.position = earthPos.add(cameraOffset).transform(gl.rlGetMatrixTransform());
+                    camera.up = Z.transform(gl.rlGetMatrixTransform());
+
                     drawVector(X.scale(10), .white);
                     drawVector(Y.scale(10), .red);
-                    //drawVector(Z.scale(10), .green);
+                    drawVector(Z.scale(10), .green);
                     earth.model.draw(earthPos, 1, .white);
                 }
             }
@@ -186,6 +188,7 @@ pub fn main() !void {
                 defer gl.rlPopMatrix();
 
                 gl.rlRotatef(-sunRotation, 0, 0, 1);
+
                 gl.rlTranslatef(0, 200, 0);
                 raylib.drawSphere(Vector3.zero(), 5, .yellow);
                 sunPos = Vector3.zero().transform(gl.rlGetMatrixTransform());
