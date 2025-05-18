@@ -23,6 +23,10 @@
             .url = "git+https://github.com/Ratakor/axe?ref=master#b84413eeb75adb1bc738e67a32d946a17088786f",
             .hash = "axe-0.6.1-M2JU5WqKAAA7CfrdSVgJVGtbePPUjZapmOsVW_m5vl1w",
         },
+        .astronomy_textures = .{
+            .url = "git+https://github.com/agagniere/astronomy_textures?ref=master#1085490859826df4f3c61dee5edbddbbc824bf10",
+            .hash = "astronomy_textures-0.0.1-ljLneys-JgB_1q0Vexj7LXPaHLfj0joyv7jWjjMLIC6J",
+        },
     },
     .paths = .{
         "build.zig",

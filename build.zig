@@ -17,6 +17,7 @@ pub fn build(b: *std.Build) void {
     const rayzig = b.dependency("raylib_zig", .{ .target = target, .optimize = optimize });
     const units = b.dependency("unitz", .{ .target = target, .optimize = optimize });
     const axe = b.dependency("axe", .{ .target = target, .optimize = optimize });
+    const astrotex = b.dependency("astronomy_textures", .{});
 
     const exe_mod = b.createModule(.{
         .root_source_file = b.path("main.zig"),
@@ -27,6 +28,7 @@ pub fn build(b: *std.Build) void {
             .{ .name = "raylib", .module = rayzig.module("raylib") },
             .{ .name = "units", .module = units.module("unitz") },
             .{ .name = "axe", .module = axe.module("axe") },
+            .{ .name = "astronomy_textures", .module = astrotex.module("assets") },
         },
     });
     const exe = b.addExecutable(.{

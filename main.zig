@@ -5,6 +5,7 @@ const raylib = @import("raylib");
 const assets = @import("src/assets.zig");
 const units = @import("units");
 const log_config = @import("src/log.zig");
+const astrotex = @import("astronomy_textures");
 
 const Camera = raylib.Camera3D;
 const Vector3 = raylib.Vector3;
@@ -118,7 +119,21 @@ pub fn main() !void {
     icon.setFormat(.uncompressed_r8g8b8a8);
     icon.useAsWindowIcon();
 
-    var cameraOffset: Vector3 = .{ .x = 10, .y = -20, .z = 5 };
+    const skyboxMesh = raylib.genMeshSphere(550, 16, 16);
+    var skybox: raylib.Model = try .fromMesh(skyboxMesh);
+    defer skybox.unload();
+
+    var skyboxImage = try raylib.loadImageFromMemory(".jpg", astrotex.skybox.stars);
+    defer skyboxImage.unload();
+    skyboxImage.flipVertical();
+    skyboxImage.flipHorizontal();
+    skyboxImage.rotateCW();
+    const skyboxTexture = try skyboxImage.toTexture();
+    defer skyboxTexture.unload();
+    skybox.materials[0].maps[0].texture = skyboxTexture;
+    skybox.transform = raylib.Matrix.rotate(Y, -std.math.pi / 3.0);
+
+    var cameraOffset: Vector3 = .{ .x = 20, .y = 0, .z = 5 };
     var camera: Camera = .{
         .position = cameraOffset,
         .target = earthPos,
@@ -128,7 +143,7 @@ pub fn main() !void {
     };
     var sunRotation: f32 = 0;
     var earthRotation: f32 = 0;
-    var sunPos: Vector3 = .{ .x = 0, .y = 200, .z = 0 };
+    var sunPos: Vector3 = .{ .x = 0, .y = 500, .z = 0 };
 
     raylib.disableCursor();
     while (!raylib.windowShouldClose()) {
@@ -139,8 +154,8 @@ pub fn main() !void {
             cameraOffset = cameraOffset.add(earthPos.subtract(cameraOffset).normalize().scale(mouseZoom));
         cameraOffset = cameraOffset.rotateByAxisAngle(Z, -mouseDelta.x * camera_rotation_sensitivity);
 
-        sunRotation += 0.1;
-        earthRotation += 0.5;
+        sunRotation += 0.01;
+        earthRotation += 0.2;
         const nsd = sunPos.normalize();
         const sun_dir: [3]f32 = .{ nsd.x, nsd.y, nsd.z };
         raylib.setShaderValue(earth.getShader(), loc_sundir, &sun_dir, .vec3);
@@ -154,6 +169,13 @@ pub fn main() !void {
         {
             camera.begin();
             defer camera.end();
+
+            {
+                gl.rlDisableBackfaceCulling();
+                defer gl.rlEnableBackfaceCulling();
+
+                skybox.draw(earthPos, 1, .gray);
+            }
 
             {
                 gl.rlPushMatrix();
@@ -187,10 +209,10 @@ pub fn main() !void {
                 gl.rlPushMatrix();
                 defer gl.rlPopMatrix();
 
-                gl.rlRotatef(-sunRotation, 0, 0, 1);
+                gl.rlRotatef(sunRotation, 0, 0, 1);
 
-                gl.rlTranslatef(0, 200, 0);
-                raylib.drawSphere(Vector3.zero(), 5, .yellow);
+                gl.rlTranslatef(0, 500, 0);
+                raylib.drawSphere(Vector3.zero(), 695_700 * 500 / 149_600_000, .white); // get the right angular size with a reasonable distance
                 sunPos = Vector3.zero().transform(gl.rlGetMatrixTransform());
             }
         }
